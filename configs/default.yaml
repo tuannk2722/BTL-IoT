@@ -1,0 +1,83 @@
+# This file owns all numeric defaults. Camera-specific values are seeds, not measured results.
+profile: simulation
+runtime_dir: runtime/simulation
+device_id: camera-1
+camera:
+  width: 640
+  height: 480
+  jpeg_quality: 12
+  sentinel_ms: 1000
+  active_ms: 500
+  pir_warmup_ms: 60000
+  pir_burst_ms: 10000
+  presence_hold_ms: 3000
+zones:
+  # Synthetic left-to-right layout. MUST be replaced and validated for the actual camera.
+  approach: [0.05, 0.05, 0.40, 0.90]
+  doorstep: [0.55, 0.05, 0.40, 0.90]
+  stable_observations: 2
+policy:
+  confirm_votes: 3
+  vote_window: 5
+  vote_window_ms: 4000
+  vote_spacing_ms: 300
+  track_gap_ms: 2500
+  approach_history_ms: 8000
+  identity_fresh_ms: 2000
+  doorstep_dwell_ms: 800
+  unresolved_warning_ms: 5000
+  cooldown_ms: 10000
+  max_simultaneous: 2
+alarm:
+  duration_ms: 2000
+  hard_cap_ms: 3000
+  test_cap_ms: 1000
+  ttl_ms: 5000
+  control_timeout_ms: 2000
+  control_lost_ms: 5000
+  sync_ms: 1000
+limits:
+  max_frame_bytes: 524288
+  max_decode_width: 1600
+  max_decode_height: 1200
+  max_capture_age_ms: 1000
+  max_result_age_ms: 3000
+  max_uploads_per_second: 3
+  upload_burst: 4
+  device_offline_ms: 10000
+  analysis_fault_ms: 10000
+enrollment:
+  max_people: 20
+  accepted_min: 10
+  per_round_min: 5
+  gallery_min: 5
+  gallery_max: 10
+  sample_spacing_ms: 750
+  session_ms: 600000
+  preview_ms: 30000
+  duplicate_hamming_max: 2
+vision:
+  opencv_threads: 2
+  face_confidence: 0.90
+  face_nms: 0.30
+  person_confidence: 0.50
+  person_nms: 0.60
+  face_min_px: 80
+  enrollment_face_min_px: 100
+  blur_min: 60
+  clipped_fraction_max: 0.40
+  accept: 0.45
+  reject: 0.30
+  margin: 0.08
+  track_iou: 0.15
+  track_center_distance: 0.25
+  ambiguity_margin: 0.10
+retention:
+  evidence_days: 7
+  events_days: 30
+  receipts_hours: 24
+  media_quota_bytes: 1073741824
+notifications:
+  telegram_enabled: false
+  expiry_ms: 300000
+  max_attempts: 3
