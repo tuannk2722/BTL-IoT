@@ -57,7 +57,7 @@ class Notifier:
             token, chat = os.environ["SSS_TELEGRAM_TOKEN"], os.environ["SSS_TELEGRAM_CHAT"]
             try:
                 media_path = None
-                if row.get("media_id"):
+                if row["media_id"]:
                     candidate = self.service.store.runtime / "media" / f"{row['media_id']}.jpg"
                     if candidate.exists():
                         media_path = candidate
