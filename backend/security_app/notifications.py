@@ -38,7 +38,7 @@ class Notifier:
         cfg = self.service.cfg["notifications"]
         with self.service.store.connection() as db:
             row = db.execute(
-                "SELECT o.*,e.reason AS event_reason FROM outbox o JOIN events e "
+                "SELECT o.*,e.reason AS event_reason, e.media_id FROM outbox o JOIN events e "
                 "ON o.event_id=e.id WHERE o.state='pending' ORDER BY o.created_at LIMIT 1"
             ).fetchone()
         if not row:
@@ -56,15 +56,29 @@ class Notifier:
             # Telegram can accept a request whose response times out: bounded retry may duplicate.
             token, chat = os.environ["SSS_TELEGRAM_TOKEN"], os.environ["SSS_TELEGRAM_CHAT"]
             try:
-                response = httpx.post(
-                    f"https://api.telegram.org/bot{token}/sendMessage",
-                    timeout=3,
-                    trust_env=False,
-                    json={
-                        "chat_id": chat,
-                        "text": f"Smart Security: {row['event_reason']} | {row['created_at']}",
-                    },
-                )
+                media_path = None
+                if row["media_id"]:
+                    candidate = self.service.store.runtime / "media" / f"{row['media_id']}.jpg"
+                    if candidate.exists():
+                        media_path = candidate
+
+                text = f"Smart Security: {row['event_reason']} | {row['created_at']}"
+                if media_path:
+                    with open(media_path, "rb") as f:
+                        response = httpx.post(
+                            f"https://api.telegram.org/bot{token}/sendPhoto",
+                            timeout=10.0,
+                            trust_env=False,
+                            data={"chat_id": chat, "caption": text},
+                            files={"photo": ("image.jpg", f, "image/jpeg")},
+                        )
+                else:
+                    response = httpx.post(
+                        f"https://api.telegram.org/bot{token}/sendMessage",
+                        timeout=3.0,
+                        trust_env=False,
+                        json={"chat_id": chat, "text": text},
+                    )
                 payload = response.json()
                 if not isinstance(payload, dict):
                     raise ValueError("Invalid provider response")
