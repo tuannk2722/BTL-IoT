@@ -22,7 +22,7 @@
       <section id="monitor" class="tab">
         <div class="toolbar"><div><h2>Vùng cửa</h2><p id="mode-info">Đang tải…</p></div>
           <div class="actions"><button id="arm" class="primary">Bật giám sát</button><button id="disarm">Tắt giám sát</button><button id="preview">Xem thử 30 giây</button><button id="cancel-preview" hidden>Dừng xem thử</button><button id="test">Test còi 1 giây</button></div></div>
-        <div class="monitor-grid"><article class="card"><div class="image-wrap"><img id="camera-image" alt="Ảnh camera mới nhất" hidden><canvas id="overlay"></canvas><p id="image-empty">Chưa có ảnh camera</p></div><p id="image-age">Tuổi ảnh: chưa có</p></article>
+        <div class="monitor-grid"><article class="card"><div class="image-wrap"><img id="camera-image" alt="Ảnh camera mới nhất" hidden><canvas id="overlay"></canvas><p id="image-empty">Chưa có ảnh camera</p></div><div class="metrics-bar"><span id="image-age" class="metric-pill">Tuổi ảnh: chưa có</span><span id="metric-fps" class="metric-pill">FPS: --</span><span id="metric-latency" class="metric-pill">Độ trễ API: --</span></div></article>
           <article class="card"><h3>Trạng thái hệ thống</h3><dl id="health"></dl><h3>Đối tượng hiện tại</h3><div id="tracks"></div></article></div>
         <p class="muted">Cảnh báo danh tính và xác nhận còi là hai trạng thái riêng. Người ngoài vùng cửa không tự làm còi kêu.</p>
       </section>
@@ -36,6 +36,24 @@
       </section>
       <section id="history" class="tab" hidden><div class="toolbar"><div><h2>Lịch sử sự kiện</h2><p id="history-retention">100 sự kiện gần nhất. Ảnh bằng chứng được giữ tối đa 7 ngày.</p></div><label>Mức cảnh báo<select id="severity-filter"><option value="all">Tất cả</option><option value="alarm">Cảnh báo còi</option><option value="warning">Cần kiểm tra</option><option value="info">Thông tin</option></select></label></div><div id="event-list"></div></section>
     </div>
+    <dialog id="lightbox-dialog" class="lightbox-modal">
+      <div class="lightbox-content">
+        <div class="lightbox-header">
+          <h3 id="lightbox-title">Ảnh bằng chứng</h3>
+          <button id="lightbox-close" type="button" class="btn-close" aria-label="Đóng">&times;</button>
+        </div>
+        <div class="lightbox-body">
+          <img id="lightbox-img" alt="Ảnh bằng chứng phóng to">
+        </div>
+        <div class="lightbox-footer">
+          <p id="lightbox-meta" class="muted"></p>
+          <div class="actions">
+            <a id="lightbox-download" class="button primary" download="evidence.jpg">Tải ảnh về máy</a>
+            <button id="lightbox-dismiss" type="button">Đóng</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
     <p id="message" role="status" aria-live="polite"></p>
   </main>
   <footer>Một camera · xử lý AI trên laptop · giám sát vùng tiếp cận cửa</footer>
