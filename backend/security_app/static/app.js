@@ -7,6 +7,14 @@ let csrf = sessionStorage.getItem("sss_csrf") || "",
   events = [],
   busy = false,
   imageUrl = null;
+
+// Metrics tracking
+let lastFrameId = null;
+let frameCount = 0;
+let fpsStartTime = performance.now();
+let currentFps = 0;
+let lastRtt = null;
+
 const labels = {
   KNOWN: "Người quen",
   UNKNOWN: "Không khớp người đã đăng ký",
@@ -52,6 +60,7 @@ function node(tag, text, className) {
   if (className) n.className = className;
   return n;
 }
+
 async function api(path, method = "GET", body) {
   const response = await fetch("/api/v2" + path, {
     method,
@@ -70,6 +79,45 @@ async function api(path, method = "GET", body) {
   return result;
 }
 
+/* Lightbox Modal functions */
+function openLightbox(mediaId, title, meta) {
+  const dialog = $("lightbox-dialog");
+  if (!dialog) return;
+  const titleEl = $("lightbox-title");
+  if (titleEl) titleEl.textContent = title || "Ảnh bằng chứng sự kiện";
+  const metaEl = $("lightbox-meta");
+  if (metaEl) metaEl.textContent = meta || "";
+  const src = `/api/v2/media/${mediaId}`;
+  const imgEl = $("lightbox-img");
+  if (imgEl) imgEl.src = src;
+  const dl = $("lightbox-download");
+  if (dl) {
+    dl.href = src;
+    dl.download = `evidence-${mediaId}.jpg`;
+  }
+  dialog.showModal();
+}
+
+function closeLightbox() {
+  const dialog = $("lightbox-dialog");
+  if (dialog && dialog.open) {
+    dialog.close();
+    const imgEl = $("lightbox-img");
+    if (imgEl) imgEl.removeAttribute("src");
+  }
+}
+
+const lbClose = $("lightbox-close");
+if (lbClose) lbClose.onclick = closeLightbox;
+const lbDismiss = $("lightbox-dismiss");
+if (lbDismiss) lbDismiss.onclick = closeLightbox;
+const lbDialog = $("lightbox-dialog");
+if (lbDialog) {
+  lbDialog.addEventListener("click", e => {
+    if (e.target === lbDialog) closeLightbox();
+  });
+}
+
 function clearImages() {
   for (const id of ["camera-image", "enrollment-image"]) {
     $(id).removeAttribute("src");
@@ -80,7 +128,9 @@ function clearImages() {
   const canvas = $("overlay");
   canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
   $("image-empty").hidden = false;
+  closeLightbox();
 }
+
 function logoutView() {
   viewEpoch++;
   current = null;
@@ -95,6 +145,7 @@ function logoutView() {
   $("logout").hidden = true;
   $("connection").textContent = "Chưa đăng nhập";
 }
+
 async function action(button, fn) {
   button.disabled = true;
   try {
@@ -106,6 +157,7 @@ async function action(button, fn) {
   }
   await refresh();
 }
+
 $("login-form").onsubmit = async e => {
   e.preventDefault();
   await action(e.submitter, async () => {
@@ -120,14 +172,17 @@ $("login-form").onsubmit = async e => {
     $("message").classList.remove("visible");
   });
 };
+
 $("logout").onclick = async e => action(e.target, async () => {
   await api("/auth/logout", "POST", {});
   logoutView();
 });
+
 for (const button of document.querySelectorAll("nav button")) button.onclick = () => {
   for (const b of document.querySelectorAll("nav button")) b.classList.toggle("selected", b === button);
   for (const tab of document.querySelectorAll(".tab")) tab.hidden = tab.id !== button.dataset.tab;
 };
+
 for (const [id, mode] of [
     ["arm", "ARMED"],
     ["disarm", "DISARMED"]
@@ -138,16 +193,19 @@ for (const [id, mode] of [
   });
   show(labels[mode]);
 });
+
 $("test").onclick = e => action(e.target, async () => {
   await api("/system/test-alarm", "POST", {
     idempotency_key: actionKey()
   });
   show("Đã tạo lệnh test; chờ thiết bị xác nhận.");
 });
+
 $("preview").onclick = e => action(e.target, () => api("/capture/preview", "POST", {}));
 $("cancel-preview").onclick = e => action(e.target, () => api("/capture", "DELETE"));
 $("cancel-enrollment").onclick = e => action(e.target, () => api("/capture", "DELETE"));
 $("next-round").onclick = e => action(e.target, () => api(`/enrollments/${current.capture.id}/next-round`, "POST", {}));
+
 $("commit-enrollment").onclick = e => action(e.target, async () => {
   const result = await api(`/enrollments/${current.capture.id}/commit`, "POST", {
     mode: "DISARMED",
@@ -155,6 +213,7 @@ $("commit-enrollment").onclick = e => action(e.target, async () => {
   });
   show(result.active ? "Đã lưu. Chủ động bật giám sát sau khi kiểm tra." : "Đã lưu mẫu draft. Cần hiệu chỉnh trước khi kích hoạt.");
 });
+
 $("person-form").onsubmit = e => {
   e.preventDefault();
   action(e.submitter, async () => {
@@ -165,19 +224,30 @@ $("person-form").onsubmit = e => {
     e.target.reset();
   });
 };
+
 $("severity-filter").onchange = renderEvents;
 
 function statusRow(root, key, value) {
   root.append(node("dt", key), node("dd", String(value)));
 }
+
 async function refresh() {
   if (!csrf || busy) return;
   busy = true;
   const epoch = viewEpoch;
+  const t0 = performance.now();
   try {
     const status = await api("/status");
     if (epoch !== viewEpoch) return;
+    lastRtt = Math.round(performance.now() - t0);
     current = status;
+
+    const latEl = $("metric-latency");
+    if (latEl) {
+      latEl.textContent = `Độ trễ API: ${lastRtt} ms`;
+      latEl.className = "metric-pill " + (lastRtt < 120 ? "good" : lastRtt < 300 ? "warn" : "alert");
+    }
+
     $("preview").textContent = `Xem thử ${current.ui_limits.preview_ms / 1000} giây`;
     $("test").textContent = `Test còi ${current.ui_limits.test_cap_ms / 1000} giây`;
     $("history-retention").textContent = `100 sự kiện gần nhất. Ảnh bằng chứng: tối đa ${current.ui_limits.evidence_days} ngày, có thể dọn sớm theo quota.`;
@@ -196,7 +266,17 @@ async function refresh() {
     statusRow(health, "Lệnh đang chờ", current.pending_command?.type || "Không có");
     statusRow(health, "Người quen active", current.active_people);
     statusRow(health, "Ảnh bỏ do thay mới", current.frames_replaced);
-    $("image-age").textContent = current.frame_age_ms === null ? "Chưa có ảnh" : `Tuổi ảnh: ${(current.frame_age_ms/1000).toFixed(1)} giây${current.frame_age_ms>5000?" · ẢNH CŨ":""}`;
+
+    const ageEl = $("image-age");
+    if (current.frame_age_ms === null) {
+      ageEl.textContent = "Tuổi ảnh: chưa có";
+      ageEl.className = "metric-pill";
+    } else {
+      const sec = (current.frame_age_ms / 1000).toFixed(1);
+      ageEl.textContent = `Tuổi ảnh: ${sec}s${current.frame_age_ms > 5000 ? " · ẢNH CŨ" : ""}`;
+      ageEl.className = "metric-pill " + (current.frame_age_ms < 1500 ? "good" : current.frame_age_ms < 4000 ? "warn" : "alert");
+    }
+
     const people = await api("/people");
     if (epoch !== viewEpoch) return;
     peopleById = new Map(people.map(p => [p.id, p.display_name]));
@@ -279,21 +359,25 @@ function renderEvents() {
     ack.onclick = () => action(ack, () => api(`/events/${event.id}/acknowledge`, "POST", {}));
     actions.append(ack);
     if (event.media_id) {
-      const view = node("button", "Xem ảnh bằng chứng");
-      view.onclick = () => {
-        const img = node("img");
-        img.alt = "Ảnh bằng chứng sự kiện";
-        img.src = `/api/v2/media/${event.media_id}`;
-        row.append(img);
-        view.disabled = true;
-      };
+      const mediaId = event.media_id;
+      const metaText = `${new Date(event.created_at).toLocaleString("vi-VN")} · ${labels[event.reason] || event.reason}`;
+      const view = node("button", "Phóng to ảnh bằng chứng");
+      view.onclick = () => openLightbox(mediaId, labels[event.reason] || event.reason, metaText);
       actions.append(view);
+
+      const thumb = node("img", undefined, "event-thumb");
+      thumb.alt = "Ảnh bằng chứng sự kiện (bấm để xem to)";
+      thumb.src = `/api/v2/media/${mediaId}`;
+      thumb.title = "Bấm để xem ảnh phóng to";
+      thumb.onclick = () => openLightbox(mediaId, labels[event.reason] || event.reason, metaText);
+      row.append(thumb);
     }
     row.append(actions);
     root.append(row);
   }
   if (!root.children.length) root.append(node("p", "Chưa có sự kiện phù hợp."));
 }
+
 async function loadImage() {
   const epoch = viewEpoch;
   const analysis = current?.latest_analysis;
@@ -307,6 +391,25 @@ async function loadImage() {
     blob = await response.blob(),
     img = $("camera-image");
   if (epoch !== viewEpoch) return;
+
+  // Track FPS
+  if (frameId && frameId !== lastFrameId) {
+    lastFrameId = frameId;
+    frameCount++;
+    const now = performance.now();
+    const elapsed = now - fpsStartTime;
+    if (elapsed >= 1500) {
+      currentFps = (frameCount * 1000) / elapsed;
+      frameCount = 0;
+      fpsStartTime = now;
+      const fpsEl = $("metric-fps");
+      if (fpsEl) {
+        fpsEl.textContent = `FPS: ${currentFps.toFixed(1)}`;
+        fpsEl.className = "metric-pill " + (currentFps >= 1.0 ? "good" : currentFps >= 0.5 ? "warn" : "alert");
+      }
+    }
+  }
+
   if (imageUrl) URL.revokeObjectURL(imageUrl);
   imageUrl = URL.createObjectURL(blob);
   $("enrollment-image").src = imageUrl;
@@ -339,6 +442,7 @@ async function loadImage() {
     }
   };
 }
+
 setInterval(() => {
   if (!document.hidden) refresh();
 }, 2000);
