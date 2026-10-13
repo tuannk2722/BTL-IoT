@@ -26,5 +26,7 @@ jobs:
       - uses: arduino/setup-arduino-cli@v2
         with:
           version: '1.2.2'
+      - run: arduino-cli core update-index --additional-urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+      - run: arduino-cli lib update-index
       - run: cp firmware/security_node/secrets.example.h firmware/security_node/secrets.h
       - run: arduino-cli compile --profile ai_thinker firmware/security_node

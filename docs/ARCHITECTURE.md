@@ -26,7 +26,8 @@ interface/test và thay **một module trong một issue**; không cần phá b�
 | `docs/SPEC.md`, `CONTRACTS.md` | Hành vi và giao tiếp cần tuân thủ | Cả nhóm |
 | `docs/ARCHITECTURE.md` | Ranh giới này; không lặp thuật toán/spec | Cả nhóm |
 | `docs/PLAN.md`, `VALIDATION.md` | Backlog/gate và cách đo | Cả nhóm |
-| `docs/RESEARCH.md`, `REVIEW.md` | Nguồn kỹ thuật; bằng chứng review | Đọc khi task cần |
+| `docs/INDEX.md` | Chỉ mục và định hướng đọc tài liệu | Đọc trước khi bắt đầu task mới |
+| `docs/RESEARCH.md` | Nguồn kỹ thuật và quyết định baseline | Đọc khi kiểm tra quyết định/model/nguồn |
 | `backend/security_app/main.py` | HTTP/auth dependencies, bounds, response | C |
 | `auth.py` | Admin session, CSRF, device token | C |
 | `contracts.py` | Request và Observation có validation | A/B/C cùng review |

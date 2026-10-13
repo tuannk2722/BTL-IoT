@@ -147,8 +147,10 @@ Chuẩn bị nguồn/cáp dự phòng, laptop không sleep, IP LAN ổn định,
 
 `experiments/HANDOFF.md` và `handoff-checks.json` ghi kết quả **bản v2.1 hiện tại**.
 Evidence v2 gốc chuyển vào `experiments/archive/v2/`; không dùng hash/kết quả cũ
-để chứng nhận source đã sửa. Baseline cũ 49 test pass nhưng các test review bổ sung
-đã tìm thấy lỗi; số test pass không phải chứng minh không còn bug.
+để chứng nhận source đã sửa. Baseline cũ 49 test gốc pass; bộ tái hiện review ban
+đầu có 19 case fail/2 case pass — đây là số case, không phải 19 lỗ hổng độc lập.
+Các regression về sau bổ sung cho race inference, transaction, migration, auth và
+notifier. Số test pass không phải chứng minh không còn bug.
 
 Full Arduino CLI compile vẫn BLOCKED ở bước tải platform/index do DNS trong môi
 trường review. Nhóm cần BASE-02 + HIL. C++ host tests không kiểm task scheduling,
@@ -174,3 +176,32 @@ annotation và review riêng theo H11/H13; muốn tự động hóa cần issue 
 visit theo actor. Chưa đo throughput queue/replaced hay physical latency bằng tool
 CPU offline. Dataset split theo buổi và consent vẫn cần người xác minh; path unique
 không tự phát hiện các bản copy/ảnh gần trùng được đổi tên.
+
+## 7. Giới hạn kỹ thuật đã biết — không giấu trong TODO
+
+Đây là danh sách các giới hạn đã xác nhận tại thời điểm review v2.1. Không phải bug
+mới hay điểm trừ; nhóm cần nắm để plan và báo cáo đúng phạm vi.
+
+1. **Full ESP32 compile BLOCKED khi review:** đã thử CLI 1.2.2; tải package index/core
+   bị DNS timeout. Đây không phải compile error đã xác nhận, cũng không phải PASS.
+   BASE-02 là việc đầu tiên của A. Không nạp board trong phiên review.
+2. **Chưa có ảnh người thật/holdout:** không chứng minh quality seed, đường A/B,
+   nhận diện 20 người, tốc độ đi, face/body association hoặc chống giả mạo.
+3. **UI chưa chạy trên browser thật:** phần sửa có syntax/API evidence; nhóm phải
+   kiểm laptop/mobile và thao tác enrollment. Không gọi `node --check` là UI test.
+4. **Hiệu năng chưa đo:** vẫn là SQLite + media I/O trong một số critical section;
+   latency cần đo thực tế. Một worker pending một slot hạn chế backlog nhưng không
+   tạo bảo đảm realtime.
+5. **Tracker đơn giản:** IoU/center matching bảo thủ, không ReID; overlap hoặc miss
+   có thể mất incoming. Chưa đổi thuật toán khi chưa có failure dataset thực.
+6. **Enrollment consistency dùng độ giống sample:** không phải xác minh danh
+   tính/liveness; admin kiểm người trước camera. Cần đo cùng session và duplicate
+   person trên gallery thật; không coi cosine là xác suất.
+7. **Evaluate tool một actor/lượt:** mixed scenes, label/split theo buổi, gần trùng,
+   calibration reviewer và physical latency vẫn có phần kiểm thủ công.
+8. **Dependency warning:** Starlette TestClient/httpx deprecation; suite chạy được.
+   Không nâng toàn stack chỉ để hết warning trong review nghiệp vụ.
+9. **Runtime cài từ checkout:** chưa claim wheel distribution, multi-worker, nhiều
+   camera hoặc deploy Internet. Những thứ này không thuộc baseline BTL.
+10. **Không đảm bảo "100% hết bug":** phạm vi review/test và bằng chứng được công bố
+    để nhóm biết cần kiểm gì tiếp. Không bịa số AI/HIL để đánh dấu gate hoàn thành.

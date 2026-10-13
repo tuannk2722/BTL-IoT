@@ -4,7 +4,8 @@ BTL IoT nhóm 3 người, deadline khoảng **11/2026**. Baseline v2.1 đã revi
 
 ## Đọc có chọn lọc
 
-- Ranh giới module/ownership: `docs/ARCHITECTURE.md`; chỉ đọc REVIEW khi task liên quan findings.
+- Ranh giới module/ownership: `docs/ARCHITECTURE.md`.
+- Chỉ mục và định hướng tài liệu: `docs/INDEX.md`.
 - Hành vi: `docs/SPEC.md`, chỉ các mục liên quan task.
 - Giao tiếp: `docs/CONTRACTS.md` + `backend/security_app/contracts.py`.
 - Số mặc định: `configs/default.yaml`; seed không phải kết quả đã đo.
