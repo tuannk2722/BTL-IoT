@@ -152,7 +152,7 @@ void controlTask(void*) {
       if (int32_t(now - nextAttempt) >= 0) {
         WiFi.disconnect(); WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
         nextAttempt = now + backoff + esp_random() % 300;
-        backoff = min(backoff * 2, 15000u);
+        backoff = min(uint32_t(backoff * 2), uint32_t(15000));
       }
       vTaskDelay(pdMS_TO_TICKS(250));
       continue;
@@ -228,7 +228,7 @@ void controlTask(void*) {
       portENTER_CRITICAL(&stateMux);
       if (revision != shared.revision) shared.captureAfterUs = esp_timer_get_time();
       shared.mode = newMode; shared.revision = revision; shared.lastControl = millis();
-      shared.holdUntil = millis() + min(response["capture_hold_ms"].as<uint32_t>(), 3000u);
+      shared.holdUntil = millis() + min(response["capture_hold_ms"].as<uint32_t>(), uint32_t(3000));
       uint32_t lease = response["capture_lease_ms"];
       shared.captureUntil = millis() + (lease > rtt ? lease - rtt : 0);
       const char* purpose = response["capture_purpose"] | "";
